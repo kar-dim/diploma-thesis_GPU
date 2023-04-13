@@ -1,7 +1,9 @@
+#pragma OPENCL EXTENSION cl_khr_fp16 : enable
+
 __kernel void me(__read_only image2d_t padded, 
-				 __global float *Rx,
-				 __global float *rx,
-				 __global float *neighb
+				 __global half *Rx,
+				 __global half *rx,
+				 __global half *neighb
 				)
 {	
 	const sampler_t sampler= CLK_NORMALIZED_COORDS_FALSE 
@@ -15,14 +17,14 @@ __kernel void me(__read_only image2d_t padded,
 	
 	if (pixelcoord.y <= height - 2 && pixelcoord.y >= 1 && pixelcoord.x <= width - 2 && pixelcoord.x >= 1){
 		uint k=0, i, j;
-		float x_[9]; 
+		half x_[9]; 
 		for (j=pixelcoord.x - 1; j<= pixelcoord.x + 1; j++){
 			for (i=pixelcoord.y - 1; i<= pixelcoord.y + 1; i++){
-				x_[k] = read_imagef(padded, sampler, (int2)(j,i) ).x;
+				x_[k] = read_imageh(padded, sampler, (int2)(j,i) ).x;
 				k++;
 			}
 		}
-		const float cur_value = x_[4];
+		const half cur_value = x_[4];
 		
 		for (i = 4; i < 8; i++)
             x_[i] = x_[i+1];

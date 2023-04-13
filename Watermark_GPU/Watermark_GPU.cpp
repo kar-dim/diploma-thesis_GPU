@@ -143,8 +143,10 @@ int main(void)
 	catch (cl::Error& e) {
 		cout << "Could not build a kernel, Reason:\n\n";
 		cout << e.what();
-		cout << program_nvf.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device) << "\n";
-		cout << program_me.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device) << "\n";
+		if (program_nvf.get() != NULL)
+		    cout << program_nvf.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device) << "\n";
+		if (program_me.get() != NULL)
+		    cout << program_me.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device) << "\n";
 		return -1;
 	}
 	//ο πίνακας που θα εμπεριέχει το υδατογράφημα
@@ -206,7 +208,7 @@ int main(void)
 			//αντιγράφουμε την εικόνα από τη RAM (CImg object) στη GPU. Για εικόνα μπορούσαμε απευθείας από δίσκο<->gpu
 			//απλώς ήθελα να δείξω το κόστος της μεταφοράς στη gpu από τον δίσκο σε σχέση με τη ram.
 			timer::start();
-			af::array rgb_image(cols, rows, 3, rgb_img_vals);
+			af::array rgb_image = af::array(cols, rows, 3, rgb_img_vals).as(af::dtype::f16);
 			af::sync();
 			timer::end();
 			cout << "Time to transfer RGB (uint8 *3 channels) image from RAM to VRAM: " << timer::secs_passed() << "\n\n";
@@ -214,6 +216,7 @@ int main(void)
 
 			//μετατροπή σε grayscale (αντίστοιχος matlab/cpu code για τα βάρη)
 			af::array image = af::round(0.299 * rgb_image(af::span, af::span, 0)) + af::round(0.587 * rgb_image(af::span, af::span, 1)) + af::round(0.114 * rgb_image(af::span, af::span, 2));
+			af::print("image", image);
 
 			float a;
 			//warmup μια φορά (ΝVF) ώστε να δημιουργηθούν τα kernels

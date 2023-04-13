@@ -42,7 +42,7 @@ af::array load_W(std::string w_file, const int rows, const int cols) {
 		w_stream.read(reinterpret_cast<char*>(&w_ptr[i]), sizeof(float));
 		i++;
 	}
-	af::array w(cols, rows, w_ptr);
+	af::array w = af::array(cols, rows, w_ptr).as(af::dtype::f16);
 	w = af::transpose(w);
 	delete[] w_ptr;
 	return w;
@@ -56,16 +56,16 @@ void compute_NVF_mask(af::array& image, af::array& padded, af::array& m, const i
 	//εκτέλεση kernel
 	try {
 		cl_int err = 0;
-		cl::Buffer padded_buff(context, CL_MEM_READ_ONLY, sizeof(cl_float) * padded_rows * padded_cols, NULL, &err);
+		cl::Buffer padded_buff(context, CL_MEM_READ_ONLY, sizeof(cl_half) * padded_rows * padded_cols, NULL, &err);
 		padded_buff = *padded.device<cl_mem>();
 
 		//αντιγραφή της εικόνας μέσω του Buffer ο οποίος αντιγράφτηκε από το padded array (gpu->gpu), αντι να αντιγράψουμε
 		//σε pointer στη CPU και ξανα πίσω στη GPU
-		cl::Image2D padded_image2d(context, CL_MEM_READ_ONLY, cl::ImageFormat(CL_LUMINANCE, CL_FLOAT), padded_cols, padded_rows, 0, NULL, &err);
+		cl::Image2D padded_image2d(context, CL_MEM_READ_ONLY, cl::ImageFormat(CL_LUMINANCE, CL_HALF_FLOAT), padded_cols, padded_rows, 0, NULL, &err);
 		size_t orig[] = { 0,0,0 };
 		size_t des[] = { padded_cols, padded_rows, 1 };
 		err = clEnqueueCopyBufferToImage(queue(), padded_buff(), padded_image2d(), 0, orig, des, NULL, NULL, NULL);
-		cl::Buffer nvf_buff(context, CL_MEM_WRITE_ONLY, sizeof(cl_float) * elems, NULL, &err);
+		cl::Buffer nvf_buff(context, CL_MEM_WRITE_ONLY, sizeof(cl_half) * elems, NULL, &err);
 
 		//δημιουργία, αρχικοποίηση και τρέξιμο του kernel
 		cl::Kernel kernel = cl::Kernel(program_nvf, "nvf", &err);
@@ -85,7 +85,7 @@ void compute_NVF_mask(af::array& image, af::array& padded, af::array& m, const i
 		err = queue.enqueueNDRangeKernel(kernel, cl::NDRange(), cl::NDRange(padded_cols, padded_rows), cl::NDRange(1, UtilityFunctions::max_workgroup_size));
 		queue.finish();
 		//γρήγορο διάβασμα της εικόνας που επιστρέφει το kernel
-		m = afcl::array(rows, cols, nvf_buff(), af::dtype::f32, true);
+		m = afcl::array(rows, cols, nvf_buff(), af::dtype::f16, true);
 	}
 
 	catch (const af::exception & e) {
@@ -107,7 +107,7 @@ af::array make_and_add_watermark_NVF(af::array& image, const af::array& w, const
 	const int pad = p / 2;
 	const auto padded_rows = rows + 2 * pad;
 	const auto padded_cols = cols + 2 * pad;
-	af::array padded = af::constant(0, padded_cols, padded_rows);
+	af::array padded = af::constant(0, padded_cols, padded_rows, af::dtype::f16);
 	padded(af::seq(static_cast<double>(pad), static_cast<double>(padded_cols - pad - 1)), af::seq(static_cast<double>(pad), static_cast<double>(padded_rows - pad - 1))) = image.T();
 	af::array m_nvf;
 	compute_NVF_mask(image, padded, m_nvf, p, pad, rows, cols, queue, context, program_nvf);
@@ -141,7 +141,7 @@ af::array make_and_add_watermark_ME(af::array& image, const af::array& w, const 
 	const int pad = p / 2;
 	const auto padded_rows = rows + 2 * pad;
 	const auto padded_cols = cols + 2 * pad;
-	af::array padded = af::constant(0, padded_cols, padded_rows);
+	af::array padded = af::constant(0, padded_cols, padded_rows, af::dtype::f16);
 	padded(af::seq(static_cast<double>(pad), static_cast<double>(padded_cols - pad - 1)), af::seq(static_cast<double>(pad), static_cast<double>(padded_rows - pad - 1))) = image.T();
 
 	//εδώ γίνεται ο υπολογισμός της μάσκας (μάσκα χρειάζεται αλλά όχι το φιλτρο)
@@ -172,7 +172,7 @@ af::array make_and_add_watermark_ME(af::array& image, const af::array& w, af::ar
 	const int pad = p / 2;
 	const auto padded_rows = rows + 2 * pad;
 	const auto padded_cols = cols + 2 * pad;
-	af::array padded = af::constant(0, padded_cols, padded_rows);
+	af::array padded = af::constant(0, padded_cols, padded_rows, af::dtype::f16);
 	padded(af::seq(static_cast<double>(pad), static_cast<double>(padded_cols - pad - 1)), af::seq(static_cast<double>(pad), static_cast<double>(padded_rows - pad - 1))) = image.T();
 	af::array m_e, e_x;
 	compute_ME_mask(image, padded, m_e, e_x, a_x, p, pad, rows, cols, queue, context, program, true);
@@ -197,20 +197,20 @@ void compute_ME_mask(af::array& image, af::array& padded, af::array& m_e, af::ar
 
 	cl_int err = 0;
 	try {
-		cl::Buffer padded_buff(context, CL_MEM_READ_ONLY, sizeof(float) * padded_rows * padded_cols);
+		cl::Buffer padded_buff(context, CL_MEM_READ_ONLY, sizeof(cl_float) * padded_rows * padded_cols);
 		padded_buff = *padded.device<cl_mem>();
 
 		//αντιγραφή της εικόνας μέσω του Buffer ο οποίος αντιγράφτηκε από το padded array (gpu->gpu), αντι να αντιγράψουμε
 		//σε pointer στη CPU και ξαναπίσω στη GPU, πολύ γρήγορη διαδικασία
-		cl::Image2D padded_image2d(context, CL_MEM_READ_ONLY, cl::ImageFormat(CL_LUMINANCE, CL_FLOAT), padded_cols, padded_rows, 0, NULL, &err);
+		cl::Image2D padded_image2d(context, CL_MEM_READ_ONLY, cl::ImageFormat(CL_LUMINANCE, CL_HALF_FLOAT), padded_cols, padded_rows, 0, NULL, &err);
 		size_t orig[] = { 0,0,0 };
 		size_t des[] = { static_cast<size_t>(padded_cols), static_cast<size_t>(padded_rows), 1 };
 
 		err = clEnqueueCopyBufferToImage(queue(), padded_buff(), padded_image2d(), 0, orig, des, NULL, NULL, NULL);
 		//δημιουργία buffers για τα Rx,rx και γειτονιά (κενά, θα γραφτούν δεδομένα από το kernel)
-		cl::Buffer neighb_buff(context, CL_MEM_WRITE_ONLY, sizeof(float) * elems * (p_squared_1), NULL, &err);
-		cl::Buffer Rx_buff(context, CL_MEM_WRITE_ONLY, sizeof(float) * elems * (p_squared_1) * (p_squared_1), NULL, &err);
-		cl::Buffer rx_buff(context, CL_MEM_WRITE_ONLY, sizeof(float) * elems * (p_squared_1), NULL, &err);
+		cl::Buffer neighb_buff(context, CL_MEM_WRITE_ONLY, sizeof(cl_float) * elems * (p_squared_1), NULL, &err);
+		cl::Buffer Rx_buff(context, CL_MEM_WRITE_ONLY, sizeof(cl_float) * elems * (p_squared_1) * (p_squared_1), NULL, &err);
+		cl::Buffer rx_buff(context, CL_MEM_WRITE_ONLY, sizeof(cl_float) * elems * (p_squared_1), NULL, &err);
 
 		//δημιουργία και αρχικοποίηση του kernel
 		cl::Kernel kernel = cl::Kernel(program, "me", &err);
@@ -233,9 +233,9 @@ void compute_ME_mask(af::array& image, af::array& padded, af::array& m_e, af::ar
 
 		//θέτουμε στα arrayfire arrays τα δεδομένα απευθείας από τη GPU, δεν υπάρχει μεταφορά από GPU σε RAM και από RAM
 		//πάλι σε GPU, διαβάζονται από τη GPU και "μετατρέπονται" σε arrayfire arrays.
-		af::array Rx_all = afcl::array(rows * p_squared_1 * p_squared_1, cols, Rx_buff(), af::dtype::f32, true);
-		af::array rx_all = afcl::array(rows * p_squared_1, cols, rx_buff(), af::dtype::f32, true);
-		af::array x_ = af::moddims(afcl::array(rows * p_squared_1, cols, neighb_buff(), af::dtype::f32, true), p_squared_1, elems);
+		af::array Rx_all = afcl::array(rows * p_squared_1 * p_squared_1, cols, Rx_buff(), af::dtype::f16, true);
+		af::array rx_all = afcl::array(rows * p_squared_1, cols, rx_buff(), af::dtype::f16, true);
+		af::array x_ = af::moddims(afcl::array(rows * p_squared_1, cols, neighb_buff(), af::dtype::f16, true), p_squared_1, elems);
 
 		//τώρα θα χρειαστεί να κάνουμε reduction αθροίσματα των blocks
 		//όλα τα [p^2-1,1] blocks θα αθροιστούν στην rx
