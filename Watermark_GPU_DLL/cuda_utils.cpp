@@ -57,14 +57,4 @@ namespace cuda_utils {
         cudaCreateTextureObject(&texObj, &pResDesc, &pTexDesc, NULL);
         return texObj;
     }
-
-    //get a cudaDeviceProp handle to query for various device information
-    cudaDeviceProp getDeviceProperties() 
-    {
-        int device;
-        cudaGetDevice(&device);
-        cudaDeviceProp properties;
-        cudaGetDeviceProperties(&properties, device);
-        return properties;
-    }
 }

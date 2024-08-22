@@ -1,8 +1,6 @@
 #include "cimg_init.h"
-#include "cuda_utils.hpp"
 #include "INIReader.h"
 #include "Utilities.hpp"
-#include "Watermark.cuh"
 #include "Watermark_GPU.hpp"
 #include <cstdlib>
 #include <cstring>
@@ -13,6 +11,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <Watermark.cuh>
 
 using std::cout;
 using std::string;
@@ -58,7 +57,11 @@ int main(void)
 		exit_program(EXIT_FAILURE);
 	}
 
-	cudaDeviceProp properties = cuda_utils::getDeviceProperties();
+	//get cuda device information
+	int device;
+	cudaGetDevice(&device);
+	cudaDeviceProp properties;
+	cudaGetDeviceProperties(&properties, device);
 
 	//test algorithms
 	try {

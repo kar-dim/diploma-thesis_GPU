@@ -9,5 +9,4 @@ namespace cuda_utils {
     cudaResourceDesc createResourceDescriptor(cudaArray* cuArray);
     cudaTextureDesc createTextureDescriptor();
     cudaTextureObject_t createTextureObject(const cudaResourceDesc& pResDesc, const cudaTextureDesc& pTexDesc);
-    cudaDeviceProp getDeviceProperties();
 }

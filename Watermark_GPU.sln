@@ -3,18 +3,34 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.34916.146
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Watermark_GPU", "Watermark_GPU\Watermark_GPU.vcxproj", "{2905FB46-FEAE-4E12-AFAC-DE4920B64608}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Watermark_GPU_DLL", "Watermark_GPU_DLL\Watermark_GPU_DLL.vcxproj", "{D5B36CD3-74BB-4510-9BD6-822405798796}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Watermark_GPU_Client", "Watermark_GPU_Client\Watermark_GPU_Client.vcxproj", "{B637DFF5-EB64-46BB-A4BD-D65E9006BCFC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{2905FB46-FEAE-4E12-AFAC-DE4920B64608}.Debug|x64.ActiveCfg = Debug|x64
-		{2905FB46-FEAE-4E12-AFAC-DE4920B64608}.Debug|x64.Build.0 = Debug|x64
-		{2905FB46-FEAE-4E12-AFAC-DE4920B64608}.Release|x64.ActiveCfg = Release|x64
-		{2905FB46-FEAE-4E12-AFAC-DE4920B64608}.Release|x64.Build.0 = Release|x64
+		{D5B36CD3-74BB-4510-9BD6-822405798796}.Debug|x64.ActiveCfg = Debug|x64
+		{D5B36CD3-74BB-4510-9BD6-822405798796}.Debug|x64.Build.0 = Debug|x64
+		{D5B36CD3-74BB-4510-9BD6-822405798796}.Debug|x86.ActiveCfg = Debug|x64
+		{D5B36CD3-74BB-4510-9BD6-822405798796}.Debug|x86.Build.0 = Debug|x64
+		{D5B36CD3-74BB-4510-9BD6-822405798796}.Release|x64.ActiveCfg = Release|x64
+		{D5B36CD3-74BB-4510-9BD6-822405798796}.Release|x64.Build.0 = Release|x64
+		{D5B36CD3-74BB-4510-9BD6-822405798796}.Release|x86.ActiveCfg = Release|x64
+		{D5B36CD3-74BB-4510-9BD6-822405798796}.Release|x86.Build.0 = Release|x64
+		{B637DFF5-EB64-46BB-A4BD-D65E9006BCFC}.Debug|x64.ActiveCfg = Debug|x64
+		{B637DFF5-EB64-46BB-A4BD-D65E9006BCFC}.Debug|x64.Build.0 = Debug|x64
+		{B637DFF5-EB64-46BB-A4BD-D65E9006BCFC}.Debug|x86.ActiveCfg = Debug|x64
+		{B637DFF5-EB64-46BB-A4BD-D65E9006BCFC}.Debug|x86.Build.0 = Debug|x64
+		{B637DFF5-EB64-46BB-A4BD-D65E9006BCFC}.Release|x64.ActiveCfg = Release|x64
+		{B637DFF5-EB64-46BB-A4BD-D65E9006BCFC}.Release|x64.Build.0 = Release|x64
+		{B637DFF5-EB64-46BB-A4BD-D65E9006BCFC}.Release|x86.ActiveCfg = Release|x64
+		{B637DFF5-EB64-46BB-A4BD-D65E9006BCFC}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

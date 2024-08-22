@@ -1,12 +1,14 @@
 #include "cuda_utils.hpp"
+#include "include/Watermark.cuh"
 #include "kernels.cuh"
-#include "Watermark.cuh"
 #include <af/cuda.h>
 #include <arrayfire.h>
 #include <cmath>
+#include <cstring>
 #include <cuda_runtime.h>
 #include <fstream>
 #include <iostream>
+#include <malloc.h>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -20,7 +22,7 @@ using std::cout;
 
 //constructor without specifying input image yet, it must be supplied later by calling the appropriate public method
 Watermark::Watermark(const string &w_file_path, const int p, const float psnr)
-	:w_file_path(w_file_path), p(p), p_squared(p* p), p_squared_minus_one(p_squared - 1), p_squared_minus_one_squared(p_squared_minus_one* p_squared_minus_one), pad(p / 2), psnr(psnr) 
+	:w_file_path(strdup(w_file_path.c_str())), p(p), p_squared(p* p), p_squared_minus_one(p_squared - 1), p_squared_minus_one_squared(p_squared_minus_one* p_squared_minus_one), pad(p / 2), psnr(psnr) 
 {
 	rows = -1;
 	cols = -1;
@@ -35,13 +37,16 @@ Watermark::Watermark(const af::array &rgb_image, const af::array& image, const s
 {
 	this->rgb_image = rgb_image;
 	load_image(image);
-	w = load_W(rows, cols);
+	load_W(rows, cols);
+	auto c = w.dims(0);
+	auto d = w.dims(1);
 }
 
 //destructor, only custom kernels cuda stream must be destroyed
 Watermark::~Watermark()
 {
 	cudaStreamDestroy(custom_kernels_stream);
+	free(w_file_path);
 }
 
 //supply the input image to apply watermarking and detection
@@ -53,11 +58,11 @@ void Watermark::load_image(const af::array& image)
 }
 
 //helper method to load the random noise matrix W from the file specified.
-af::array Watermark::load_W(const dim_t rows, const dim_t cols) const 
+void Watermark::load_W(const dim_t rows, const dim_t cols) 
 {
-	std::ifstream w_stream(w_file_path.c_str(), std::ios::binary);
+	std::ifstream w_stream(w_file_path, std::ios::binary);
 	if (!w_stream.is_open())
-		throw std::runtime_error(string("Error opening '" + w_file_path + "' file for Random noise W array\n"));
+		throw std::runtime_error(string("Error opening '") + w_file_path + "' file for Random noise W array\n");
 	w_stream.seekg(0, std::ios::end);
 	const auto total_bytes = w_stream.tellg();
 	w_stream.seekg(0, std::ios::beg);
@@ -65,7 +70,7 @@ af::array Watermark::load_W(const dim_t rows, const dim_t cols) const
 		throw std::runtime_error(string("Error: W file total elements != image dimensions! W file total elements: " + std::to_string(total_bytes / (sizeof(float))) + ", Image width: " + std::to_string(cols) + ", Image height: " + std::to_string(rows) + "\n"));
 	std::unique_ptr<float> w_ptr(new float[rows * cols]);
 	w_stream.read(reinterpret_cast<char*>(&w_ptr.get()[0]), total_bytes);
-	return af::transpose(af::array(cols, rows, w_ptr.get()));
+	this->w = af::transpose(af::array(cols, rows, w_ptr.get()));
 }
 
 //helper method to copy an arrayfire cuda buffer into a cuda Texture Object Image (fast copy that happens in the device)
@@ -130,6 +135,7 @@ af::array Watermark::make_and_add_watermark(af::array& coefficients, float& a, M
 	mask = mask_type == MASK_TYPE::ME ? 
 		compute_prediction_error_mask(image, error_sequence, coefficients, ME_MASK_CALCULATION_REQUIRED_YES) :
 		compute_custom_mask(image);
+
 	const af::array u = mask * w;
 	const float divisor = std::sqrt(af::sum<float>(af::pow(u, 2)) / (image.elements()));
 	a = (255.0f / std::sqrt(std::pow(10.0f, psnr / 10.0f))) / divisor;

@@ -1,4 +1,11 @@
 #pragma once
+
+#ifdef WATERMARK_EXPORT
+#define WATERMARK_API __declspec(dllexport)
+#else
+#define WATERMARK_API __declspec(dllimport)
+#endif
+
 #include <arrayfire.h>
 #include <cuda_runtime.h>
 #include <string>
@@ -18,9 +25,9 @@ enum IMAGE_TYPE {
  *  \brief  Functions for watermark computation and detection
  *  \author Dimitris Karatzas
  */
-class Watermark {
+class WATERMARK_API Watermark {
 private:
-	const std::string w_file_path;
+	char* w_file_path;
 	const int p, p_squared, p_squared_minus_one, p_squared_minus_one_squared, pad;
 	const float psnr;
 	af::array rgb_image, image, w;
@@ -40,7 +47,7 @@ public:
 	Watermark(const af::array& rgb_image, const af::array& image, const std::string& w_file_path, const int p, const float psnr);
 	Watermark(const std::string &w_file_path, const int p, const float psnr);
 	~Watermark();
-	af::array load_W(const dim_t rows, const dim_t cols) const;
+	void load_W(const dim_t rows, const dim_t cols);
 	void load_image(const af::array& image);
 	af::array make_and_add_watermark(af::array& coefficients, float& a, MASK_TYPE type, IMAGE_TYPE image_type) const;
 	float mask_detector(const af::array& watermarked_image, MASK_TYPE mask_type) const;
