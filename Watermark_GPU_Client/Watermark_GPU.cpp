@@ -183,6 +183,7 @@ int test_for_video(const INIReader& inir, const cudaDeviceProp& properties, cons
 	}
 
 	CImgList<unsigned char> video_cimg;
+	string video_path;
 	std::vector<af::array> watermarked_frames;
 	std::vector<af::array> coefficients;
 	watermarked_frames.reserve(frames);
@@ -203,7 +204,8 @@ int test_for_video(const INIReader& inir, const cudaDeviceProp& properties, cons
 	if (make_watermark == true)
 	{
 		//load video from file
-		video_cimg = CImgList<unsigned char>::get_load_yuv(strdup(inir.Get("paths", "video", "NO_VIDEO").c_str()), cols, rows, 420, 0, frames - 1, 1, false);
+		video_path = inir.Get("paths", "video", "NO_VIDEO");
+		video_cimg = CImgList<unsigned char>::get_load_yuv(video_path.c_str(), cols, rows, 420, 0, frames - 1, 1, false);
 		if (watermark_first_frame_only == false) {
 			int counter = 0;
 			for (int i = 0; i < frames; i++) {
@@ -307,7 +309,8 @@ int test_for_video(const INIReader& inir, const cudaDeviceProp& properties, cons
 	//realtimne watermark detection of a compressed file
 	if (inir.GetBoolean("parameters_video", "watermark_detection_compressed", false) == true) {
 		//read compressed file
-		CImgList<unsigned char>video_cimg_w = CImgList<unsigned char>::get_load_video(strdup(inir.Get("paths", "video_compressed", "NO_VIDEO").c_str()), 0, frames - 1);
+		string video_compressed_path = inir.Get("paths", "video_compressed", "NO_VIDEO");
+		CImgList<unsigned char>video_cimg_w = CImgList<unsigned char>::get_load_video(video_compressed_path.c_str(), 0, frames - 1);
 		std::vector<af::array> watermarked_frames(frames);
 #pragma omp parallel for
 		for (int i = 0; i < frames; i++) {
